@@ -25,8 +25,9 @@ contract AGENTToken is ERC20, Ownable, ERC20Permit, Taxable {
         ERC20("AGENT Token", "AGENT")
         ERC20Permit("AGENT Token")
         Taxable(taxPercentage, taxRecipient)
+        Ownable(owner)
     {
-        _transferOwnership(owner);
+        // _transferOwnership(owner);
         _tokenURI = uri;
         _maxSupply = maxSupply;
     }
@@ -91,5 +92,9 @@ contract AGENTToken is ERC20, Ownable, ERC20Permit, Taxable {
 
     function getTaxPercentage() public view returns (uint256) {
         return _taxPercentage;
+    }
+
+    function getMaxSupply() public view returns (uint256) {
+        return _maxSupply;
     }
 }
