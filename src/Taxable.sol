@@ -40,6 +40,11 @@ abstract contract Taxable {
         return 0;
     }
 
+    function _flipTaxStatus() internal {
+        _taxEnabled = !_taxEnabled;
+        emit TaxStatusUpdated(_taxEnabled);
+    }
+
     function _getTaxRecipient() internal view returns (address) {
         return _taxRecipient;
     }

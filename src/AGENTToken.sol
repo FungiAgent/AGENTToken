@@ -81,6 +81,23 @@ contract AGENTToken is ERC20, Ownable, ERC20Permit, Taxable {
         _mint(msg.sender, allowedAmount);
     }
 
+    function updateTaxPercentage(uint256 newTaxPercentage) external onlyOwner {
+        require(newTaxPercentage >= MIN_TAX && newTaxPercentage <= MAX_TAX, "Tax percentage out of range");
+        _taxPercentage = newTaxPercentage;
+        emit TaxUpdated(newTaxPercentage);
+    }
+
+    function updateTaxRecipient(address newTaxRecipient) external onlyOwner {
+        require(newTaxRecipient != address(0), "Tax recipient cannot be zero address");
+        _taxRecipient = newTaxRecipient;
+        emit TaxRecipientUpdated(newTaxRecipient);
+    }
+
+    function flipTaxStatus() external onlyOwner {
+        _flipTaxStatus();
+        emit TaxStatusUpdated(_taxEnabled);
+    }
+
     /* View functions */
     function getAllowedMint(address account) public view returns (uint256) {
         return _allowedMint[account];
@@ -96,5 +113,13 @@ contract AGENTToken is ERC20, Ownable, ERC20Permit, Taxable {
 
     function getMaxSupply() public view returns (uint256) {
         return _maxSupply;
+    }
+
+    function getTaxRecipient() public view returns (address) {
+        return _taxRecipient;
+    }
+
+    function isTaxEnabled() public view returns (bool) {
+        return _taxEnabled;
     }
 }

@@ -1,25 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "src/AGENTToken.sol";
+import {Script} from "forge-std/Script.sol";
+import {AGENTToken} from "src/AGENTToken.sol";
 
 contract DeployAGENT is Script {
-    function run() external returns (AGENTToken) {
-        vm.startBroadcast();
+    address public owner = msg.sender;
+    uint256 public maxSupply = 999999999;
+    string public uri = "https://token-uri.com";
+    uint256 public taxPercentage = 100;
+    address public taxRecipient = msg.sender;
 
-        /* 
-            * Deploy AGENTToken contract
-            * 
-            * Parameters:
-            * - owner: address of the contract owner
-            * - maxSupply: maximum supply of the token
-            * - uri: token URI (logo image)
-            * - taxPercentage: tax percentage in basis points
-            * - taxRecipient: address of the tax recipient
-        */
-        AGENTToken agentToken = new AGENTToken(address(this), 999999999, "https://token-uri.com", 100, address(0x4));
+    function run() external {
+        vm.startBroadcast();
+        new AGENTToken(owner, maxSupply, uri, taxPercentage, taxRecipient);
         vm.stopBroadcast();
-        return agentToken;
     }
 }
