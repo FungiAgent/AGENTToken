@@ -122,4 +122,8 @@ contract AGENTToken is ERC20, Ownable, ERC20Permit, Taxable {
     function isTaxEnabled() public view returns (bool) {
         return _taxEnabled;
     }
+
+    function isContractTaxable(address contractAddress) public view returns (bool) {
+        return _isContractTaxable(contractAddress);
+    }
 }

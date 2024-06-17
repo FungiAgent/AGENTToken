@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 /*
  * @title Taxable
  * @author Dreski3
- * @dev A contract that allows for the implementation of a tax on transfers to specific contracts.
+ * @dev A contract that allows taxing on transfers to specific contracts.
  */
 
 abstract contract Taxable {
@@ -29,7 +29,16 @@ abstract contract Taxable {
         _taxEnabled = true; // Tax is enabled by default
     }
 
-    function isContractTaxable(address contractAddress) public view returns (bool) {
+    /* Internal functions */
+
+    function _flipTaxStatus() internal {
+        _taxEnabled = !_taxEnabled;
+        emit TaxStatusUpdated(_taxEnabled);
+    }
+
+    /* View functions */
+
+    function _isContractTaxable(address contractAddress) internal view returns (bool) {
         return _taxableContracts[contractAddress];
     }
 
@@ -38,11 +47,6 @@ abstract contract Taxable {
             return (amount * _taxPercentage) / 10000;
         }
         return 0;
-    }
-
-    function _flipTaxStatus() internal {
-        _taxEnabled = !_taxEnabled;
-        emit TaxStatusUpdated(_taxEnabled);
     }
 
     function _getTaxRecipient() internal view returns (address) {

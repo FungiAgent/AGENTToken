@@ -16,6 +16,12 @@ contract AGENTTokenTest is Test {
     uint256 public taxPercentage = 100;
     address public taxRecipient;
 
+    // Events to be used in the tests
+    event AllowedMintUpdated(address indexed account, uint256 allowedAmount);
+    event TaxableContractUpdated(address indexed contractAddress, bool taxable);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // Setup function to prepare the environment for testing
     function setUp() public {
         owner = address(this);
         taxRecipient = address(this);
@@ -23,7 +29,7 @@ contract AGENTTokenTest is Test {
     }
 
     // Test the constructor sets correct initial parameters
-    function testConstructorSetsCorrectInitialParameters() public {
+    function testConstructorSetsCorrectInitialParameters() public view {
         assertEq(agentToken.owner(), owner);
         assertEq(agentToken.getMaxSupply(), maxSupply);
         assertEq(agentToken.getTaxPercentage(), taxPercentage);
@@ -52,7 +58,10 @@ contract AGENTTokenTest is Test {
         address account = address(0x5678);
         uint256 allowedAmount = 1000;
 
+        vm.expectEmit(true, true, true, true);
+        emit AllowedMintUpdated(account, allowedAmount);
         agentToken.setAllowedMint(account, allowedAmount);
+
         assertEq(agentToken.getAllowedMint(account), allowedAmount);
     }
 
@@ -74,6 +83,18 @@ contract AGENTTokenTest is Test {
 
         vm.expectRevert("Amount exceeds max supply");
         agentToken.setAllowedMint(account, allowedAmount);
+    }
+
+    // Test setAllowedMint with an amount within the maximum supply
+    function testSetAllowedMintWithinMaxSupply() public {
+        address account = address(0x5678);
+        uint256 allowedAmount = maxSupply;
+
+        vm.expectEmit(true, true, true, true);
+        emit AllowedMintUpdated(account, allowedAmount);
+        agentToken.setAllowedMint(account, allowedAmount);
+
+        assertEq(agentToken.getAllowedMint(account), allowedAmount);
     }
 
     // Test mint function for an allowed address
@@ -103,9 +124,23 @@ contract AGENTTokenTest is Test {
     function testUpdateTaxableContractWithOwner() public {
         address contractAddress = address(0x1111);
 
+        vm.expectEmit(true, true, true, true);
+        emit TaxableContractUpdated(contractAddress, true);
         agentToken.updateTaxableContract(contractAddress, true);
         assertTrue(agentToken.isContractTaxable(contractAddress));
 
+        vm.expectEmit(true, true, true, true);
+        emit TaxableContractUpdated(contractAddress, false);
+        agentToken.updateTaxableContract(contractAddress, false);
+        assertFalse(agentToken.isContractTaxable(contractAddress));
+    }
+
+    // Test updateTaxableContract function with the owner address and false value
+    function testUpdateTaxableContractWithOwnerFalse() public {
+        address contractAddress = address(0x1111);
+
+        vm.expectEmit(true, true, true, true);
+        emit TaxableContractUpdated(contractAddress, false);
         agentToken.updateTaxableContract(contractAddress, false);
         assertFalse(agentToken.isContractTaxable(contractAddress));
     }
@@ -143,6 +178,11 @@ contract AGENTTokenTest is Test {
         uint256 taxAmount = (transferAmount * taxPercentage) / 10000; // 1% of 1000 = 10
         uint256 expectedTransferAmount = transferAmount - taxAmount;
 
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(sender, recipient, expectedTransferAmount);
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(sender, taxRecipient, taxAmount);
+
         vm.prank(sender);
         agentToken.transfer(recipient, transferAmount);
 
@@ -169,6 +209,9 @@ contract AGENTTokenTest is Test {
         assertEq(agentToken.balanceOf(taxRecipient), 0);
 
         // Transfer tokens
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(sender, recipient, transferAmount);
+
         vm.prank(sender);
         agentToken.transfer(recipient, transferAmount);
 
@@ -207,6 +250,11 @@ contract AGENTTokenTest is Test {
         uint256 taxAmount = (transferAmount * taxPercentage) / 10000; // 1% of 1000 = 10
         uint256 expectedTransferAmount = transferAmount - taxAmount;
 
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(sender, recipient, expectedTransferAmount);
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(sender, taxRecipient, taxAmount);
+
         agentToken.transferFrom(sender, recipient, transferAmount);
 
         // Check final balances and remaining allowance
@@ -239,6 +287,9 @@ contract AGENTTokenTest is Test {
         assertEq(agentToken.allowance(sender, spender), transferAmount);
 
         // Transfer tokens
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(sender, recipient, transferAmount);
+
         agentToken.transferFrom(sender, recipient, transferAmount);
 
         // Check final balances and remaining allowance
@@ -285,45 +336,6 @@ contract AGENTTokenTest is Test {
 
         assertEq(agentToken.totalSupply(), amount1 + amount2);
     }
-
-    // // Test the permit functionality
-    // function testPermit() public {
-    //     address owner = address(0x1234);
-    //     address spender = address(0x5678);
-    //     uint256 value = 1000;
-    //     uint256 deadline = block.timestamp + 1 hours;
-
-    //     // Create a new wallet for signing
-    //     address signerWallet = vm.addr(1);
-
-    //     // Mint tokens to the owner
-    //     agentToken.setAllowedMint(owner, value);
-    //     vm.prank(owner);
-    //     agentToken.mint();
-
-    //     // Create the permit signature
-    //     uint256 nonce = agentToken.nonces(owner);
-    //     bytes32 hashStruct = keccak256(
-    //         abi.encode(
-    //             keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
-    //             owner,
-    //             spender,
-    //             value,
-    //             nonce,
-    //             deadline
-    //         )
-    //     );
-    //     bytes32 digest = keccak256(abi.encodePacked("\x19\x01", agentToken.DOMAIN_SEPARATOR(), hashStruct));
-
-    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet, digest);
-
-    //     // Permit the spender
-    //     agentToken.permit(owner, spender, value, deadline, v, r, s);
-
-    //     // Check the allowance
-    //     assertEq(agentToken.allowance(owner, spender), value);
-    //     assertEq(agentToken.nonces(owner), nonce + 1);
-    // }
 
     // Test setting the tax percentage to the minimum allowed value
     function testSetTaxPercentageToMinimum() public {
