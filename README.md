@@ -4,7 +4,7 @@ Fungi will deploy a taxable ERC-20 token called AGENT as a standalone product to
 
 AGENT will be an ERC-20 token with the following characteristics hardcoded into the contract:
 
-- **Max supply:** 999,999,999
+- **Max supply:** 999,999
 - **Decimals:** 18
 - **Ownable:** A feature inherited from the OpenZeppelin library. A DAO will act as the owner and decision making medium.
 - **Taxable:** A transaction fee or rayalty is to be charged on specific operations, and be redirected to the Fungi DAO.
