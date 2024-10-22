@@ -23,6 +23,7 @@ contract AGENTTokenTest is Test {
     event AllowedMintUpdated(address indexed account, uint256 allowedAmount);
     event TaxableContractUpdated(address indexed contractAddress, bool taxable);
     event Transfer(address indexed from, address indexed to, uint256 value);
+    event TaxRecipientsUpdated(address newCreator, address newDao);
 
     // Setup function to prepare the environment for testing
     function setUp() public {
@@ -391,15 +392,20 @@ contract AGENTTokenTest is Test {
     function testSetTaxRecipientToZeroAddress() public {
         address zeroAddress = address(0);
 
-        vm.expectRevert("Tax recipients cannot be zero address");
-        agentToken.updateTaxRecipients(zeroAddress, zeroAddress);
+        // Update the test to check for the correct revert message for each function
+        vm.expectRevert("Creator cannot be zero address");
+        agentToken.updateCreator(zeroAddress);
+
+        vm.expectRevert("DAO cannot be zero address");
+        agentToken.updateDao(zeroAddress);
     }
 
     // Test setting the tax recipient to a valid address
     function testSetTaxRecipientToValidAddress() public {
         address newCreator = address(0x1234);
         address newDao = address(0x5678);
-        agentToken.updateTaxRecipients(newCreator, newDao);
+        agentToken.updateCreator(newCreator);
+        agentToken.updateDao(newDao);
 
         (address currentCreator, address currentDao) = agentToken.getTaxRecipients();
         assertEq(currentCreator, newCreator);
@@ -632,5 +638,76 @@ contract AGENTTokenTest is Test {
         assertEq(agentToken.balanceOf(recipient2), expectedTransferAmount2);
         assertEq(agentToken.balanceOf(creator), halfTax1 + halfTax2);
         assertEq(agentToken.balanceOf(dao), (taxAmount1 - halfTax1) + (taxAmount2 - halfTax2));
+    }
+
+    // Test that a single address can be both the creator and the DAO
+    function testSingleAddressAsCreatorAndDao() public {
+        address singleAddress = address(0x1234);
+        uint256 transferAmount = 1000;
+
+        // Update the tax recipients to the same address
+        agentToken.updateCreator(singleAddress);
+        agentToken.updateDao(singleAddress);
+
+        // Mint tokens to the sender
+        address sender = address(0x5678);
+        agentToken.setAllowedMint(sender, transferAmount);
+        vm.prank(sender);
+        agentToken.mint();
+
+        // Update recipient address as a taxable contract
+        address recipient = address(0x7890);
+        agentToken.updateTaxableContract(recipient, true);
+
+        // Perform the transfer
+        uint256 taxAmount = (transferAmount * taxPercentage) / 10000; // 1% of 1000 = 10
+
+        vm.prank(sender);
+        agentToken.transfer(recipient, transferAmount);
+
+        // Assert that the full tax amount is credited to the single address
+        assertEq(agentToken.balanceOf(singleAddress), taxAmount);
+    }
+
+    // Test updating the creator address
+    function testUpdateCreator() public {
+        address newCreator = address(0x1234);
+
+        vm.expectEmit(true, true, true, true);
+        emit TaxRecipientsUpdated(newCreator, dao);
+        agentToken.updateCreator(newCreator);
+
+        (address currentCreator, address currentDao) = agentToken.getTaxRecipients();
+        assertEq(currentCreator, newCreator);
+        assertEq(currentDao, dao);
+    }
+
+    // Test updating the DAO address
+    function testUpdateDao() public {
+        address newDao = address(0x5678);
+
+        vm.expectEmit(true, true, true, true);
+        emit TaxRecipientsUpdated(creator, newDao);
+        agentToken.updateDao(newDao);
+
+        (address currentCreator, address currentDao) = agentToken.getTaxRecipients();
+        assertEq(currentCreator, creator);
+        assertEq(currentDao, newDao);
+    }
+
+    // Test setting the creator to the zero address
+    function testUpdateCreatorToZeroAddress() public {
+        address zeroAddress = address(0);
+
+        vm.expectRevert("Creator cannot be zero address");
+        agentToken.updateCreator(zeroAddress);
+    }
+
+    // Test setting the DAO to the zero address
+    function testUpdateDaoToZeroAddress() public {
+        address zeroAddress = address(0);
+
+        vm.expectRevert("DAO cannot be zero address");
+        agentToken.updateDao(zeroAddress);
     }
 }

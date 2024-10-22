@@ -146,15 +146,23 @@ contract AGENTToken is ERC20, Ownable, ERC20Permit, Taxable {
     }
 
     /**
-     * @dev Updates the tax recipients' addresses.
+     * @dev Updates the creator's address.
      * @param newCreator The new address for the creator.
+     */
+    function updateCreator(address newCreator) external onlyOwner {
+        require(newCreator != address(0), "Creator cannot be zero address");
+        _creator = newCreator;
+        emit TaxRecipientsUpdated(newCreator, _dao);
+    }
+
+    /**
+     * @dev Updates the DAO's address.
      * @param newDao The new address for the DAO.
      */
-    function updateTaxRecipients(address newCreator, address newDao) external onlyOwner {
-        require(newCreator != address(0) && newDao != address(0), "Tax recipients cannot be zero address");
-        _creator = newCreator;
+    function updateDao(address newDao) external onlyOwner {
+        require(newDao != address(0), "DAO cannot be zero address");
         _dao = newDao;
-        emit TaxRecipientsUpdated(newCreator, newDao);
+        emit TaxRecipientsUpdated(_creator, newDao);
     }
 
     /* View functions */
